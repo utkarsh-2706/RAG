@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><title>Vector Database Guide</title></head>
+<body>
+
+<h1>Vector Database Guide</h1>
+<p>Vector databases are purpose-built to store, index, and query high-dimensional embedding vectors. They power semantic search, recommendation systems, and RAG pipelines.</p>
+
+<h2>What Are Embeddings?</h2>
+<p>Embeddings are dense numerical representations of data. Text, images, and audio can all be converted into embedding vectors. The key property is that semantically similar items have vectors that are close together in the embedding space.</p>
+<p>A 384-dimensional embedding vector looks like a list of 384 floating point numbers. The meaning is encoded in the geometric relationships between vectors, not in any single dimension.</p>
+
+<h2>How Vector Search Works</h2>
+<p>Given a query, a vector database finds the stored vectors that are most similar to the query vector. Similarity is typically measured using cosine similarity or dot product.</p>
+
+<h3>Approximate Nearest Neighbor Search</h3>
+<p>Exact nearest neighbor search over millions of vectors is too slow for real-time applications. Approximate Nearest Neighbor (ANN) algorithms trade a small amount of recall for massive speed gains.</p>
+<p>HNSW (Hierarchical Navigable Small World) is the most popular ANN algorithm. It builds a multi-layer graph where each layer is a progressively sparser view of the data.</p>
+
+<h3>Filtering and Hybrid Search</h3>
+<p>Pure vector search retrieves by semantic similarity alone. In practice, you often need to combine vector search with structured filters — for example, retrieve documents similar to a query but only from a specific date range or category.</p>
+<p>Hybrid search combines vector similarity with BM25 keyword scoring. This is powerful for queries that contain specific terms like product codes or proper nouns that embeddings may not capture well.</p>
+
+<h2>Popular Vector Databases</h2>
+<p>The ecosystem has grown rapidly. Here are the main options and their trade-offs.</p>
+
+<h3>FAISS</h3>
+<p>Facebook AI Similarity Search is a library, not a database. It runs in-process and is ideal for offline batch processing or when you want full control over the index. No server, no network overhead.</p>
+
+<h3>Chroma</h3>
+<p>Chroma is an open-source, developer-friendly vector database. It runs locally with a simple Python API and is popular for prototyping. It persists to disk and supports metadata filtering.</p>
+
+<h3>Pinecone</h3>
+<p>Pinecone is a fully managed cloud vector database. It scales to billions of vectors automatically and offers low-latency queries globally. Best for production systems that need to scale without managing infrastructure.</p>
+
+<h2>Choosing the Right Database</h2>
+<p>For local development and prototyping, use Chroma or FAISS. For production at scale, evaluate Pinecone or Weaviate based on your needs for hybrid search, filtering complexity, and operational burden tolerance.</p>
+
+</body>
+</html>

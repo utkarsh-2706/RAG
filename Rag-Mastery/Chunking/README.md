@@ -357,25 +357,284 @@ for c in chunks:
 
 ## 5. Structure-Aware Chunking
 
-*Coming next...*
+### Concept
+
+Documents like Markdown and HTML already encode structure through headers. Parse that skeleton first, then chunk along those boundaries. Each chunk carries its full heading **path** as metadata — enabling retrieval filtering on top of vector similarity.
+
+```
+## 2. Chunking Strategies        → Chunk { heading: "2. Chunking Strategies",
+### 2.1 Fixed Chunking                     heading_path: "RAG Guide > 2. Chunking > 2.1 Fixed" }
+### 2.2 Semantic Chunking
+```
+
+### The Key Idea: Heading Path
+
+Every chunk knows *where it lives* in the document:
+
+```
+"RAG Systems: A Complete Guide > 3. Embedding Models > 3.1 Choosing an Embedding Model"
+```
+
+This enables **hybrid retrieval**:
+```python
+# Vector similarity + structural filter combined
+results = db.query(
+    query_vector=embed("how to choose an embedding model"),
+    filter={"heading_path": {"$contains": "Embedding"}}
+)
+```
+Without structure-aware chunking, you can only do the first half.
+
+### Document Outline (Exp 2)
+
+The chunker automatically reconstructed the full document hierarchy:
+```
+[h1] RAG Systems: A Complete Guide  (29 words)
+  [h2] 1. What is RAG?  (62 words)
+    [h3] 1.1 Key Components  (40 words)
+    [h3] 1.2 When to Use RAG  (43 words)
+  [h2] 2. Chunking Strategies  (33 words)
+    [h3] 2.1 Fixed Chunking  (56 words)
+    ...
+```
+No NLP model needed — pure structure parsing.
+
+### Filtered Retrieval (Exp 3)
+
+```
+Query: heading_path contains "Chunking"
+  → Chunk 4: [> 2. Chunking Strategies]
+  → Chunk 5: [> 2. Chunking Strategies > 2.1 Fixed Chunking]
+  → Chunk 6: [> 2. Chunking Strategies > 2.2 Semantic Chunking]
+```
+3 exact-match chunks, zero false positives — from a pure metadata filter before any vector search.
+
+### Two Parsers
+
+| Parser     | Input      | Split signal          | Dependency     |
+|------------|------------|-----------------------|----------------|
+| Markdown   | `.md` text | `#`, `##`, `###` regex| None           |
+| HTML       | `.html`    | `<h1>`–`<h4>` tags    | BeautifulSoup  |
+
+### max_chunk_size Guard (Exp 4)
+
+When a section exceeds `max_chunk_size`, it splits on paragraph boundaries and tags continued chunks with `[continued] heading_name`. This keeps heading metadata intact across splits.
+
+```
+Without limit: 16 chunks
+With 300 chars: 20 chunks  (4 oversized sections split into 2 each)
+```
+
+### Tradeoffs
+
+| Situation                        | Structure-Aware behavior                              |
+|----------------------------------|-------------------------------------------------------|
+| Well-structured Markdown/HTML    | Excellent — best chunk-to-topic alignment possible    |
+| Plain text with no headers       | Fails completely — falls back to one big chunk        |
+| Inconsistent heading structure   | Heading path becomes unreliable                       |
+| PDF documents                    | Requires PDF parser (pdfminer, PyMuPDF) first         |
+| Code files                       | Use `class`/`def` as separators instead of `#`        |
+
+### Production Pattern: Structure + Semantic Hybrid
+
+```python
+# Phase 1: Structure-aware split (coarse, with metadata)
+sections = markdown_chunk(doc)
+
+# Phase 2: Semantic split within each section (fine, coherent)
+final_chunks = []
+for section in sections:
+    if section.char_count > MAX_SIZE:
+        sub = semantic_chunk_percentile(section.text, model, percentile=25)
+        for s in sub:
+            s.metadata["heading_path"] = section.heading_path  # preserve metadata
+        final_chunks.extend(sub)
+    else:
+        final_chunks.append(section)
+```
+
+### When To Use
+
+- Any document with consistent heading structure (docs, reports, wikis, manuals)
+- When you need retrieval filtering by section, chapter, or topic
+- As the outer layer of a hybrid chunking pipeline
+
+### Interview Insight
+
+> "Structure-aware chunking leverages the document author's own intent — headings are human-annotated
+> topic boundaries. The unique advantage over semantic chunking is metadata richness: heading paths
+> enable pre-filtering before vector search, dramatically reducing the search space and false positives.
+> The failure mode is brittle coupling to formatting — a document with no headers, inconsistent
+> heading levels, or generated from a bad PDF extraction will produce garbage chunks."
+
+### Think About This
+
+1. A user queries: *"What are the retrieval metrics in RAG?"* — With heading path metadata, how would you combine vector search AND structural filtering to get a better answer than vector search alone?
+2. You receive a PDF document. Structure-aware chunking won't work directly. What preprocessing pipeline would you build to make it work?
+3. In Exp 4, the `[continued]` tag was added to split chunks. What problem does this create at retrieval time, and how would you fix it?
 
 ---
 
 ## 6. Dynamic / Query-Aware Chunking
 
-*Coming next...*
+### Concept
+
+Every previous technique makes a single fixed bet at ingestion time. Dynamic chunking separates the retrieval unit from the generation unit:
+
+```
+Traditional:  INDEX [chunk] --> RETRIEVE [chunk] --> LLM gets [chunk]
+                                                      (same size always)
+
+Dynamic:      INDEX [small] --> RETRIEVE [small] --> EXPAND --> LLM gets [large]
+                                  (precise)                      (rich context)
+```
+
+**The unit you index for retrieval != the unit you return to the LLM.**
+
+### Three Strategies
+
+#### Strategy 1: Small-to-Big (Parent-Document Retrieval)
+
+Build a two-level hierarchy at ingestion. Index small children. Return large parents.
+
+```
+Parent (400 chars) = "RAG enhances LLMs by grounding responses..."
+  Child 1 (100 chars) = "RAG enhances LLMs..."         <- indexed, gets embedding
+  Child 2 (100 chars) = "Instead of relying solely..." <- indexed, gets embedding
+  Child 3 (100 chars) = "This reduces hallucinations..." <- indexed, gets embedding
+
+Query hits Child 3 -> return full Parent to LLM (4x expansion)
+```
+
+#### Strategy 2: Sentence Window Retrieval
+
+Index every sentence. On retrieval, expand to k sentences before + after.
+
+```
+Matched sentence: "This approach reduces hallucinations..."  [11 words]
+Window (k=2):     [sentence-2] [sentence-1] [MATCH] [sentence+1] [sentence+2]
+Returned to LLM:  105 words  (9.5x expansion)
+```
+
+The window adapts to the match location — every query gets a different context window.
+
+#### Strategy 3: Contextual Compression
+
+Retrieve a full chunk, then compress it down to only the query-relevant sentences.
+
+```
+Chunk retrieved: 59 words (full paragraph about RAG)
+After compression: 40 words (only the 2 sentences most relevant to the query)
+Expansion: 0.7x  <- smaller than indexed! Opposite direction.
+```
+
+In production, compression is done by an LLM call:
+```python
+compressed = llm(f"Extract only sentences relevant to: '{query}'\n\n{chunk}")
+```
+
+### Size Comparison (Exp 4)
+
+```
+Query: "How does RAG reduce hallucinations?"
+
+Strategy                  Indexed   Returned   Expansion
+Small-to-Big                  13w       52w       4.0x
+Sentence Window               11w      105w       9.5x
+Contextual Compression        59w       40w       0.7x
+```
+
+Three different philosophies: expand 4x, expand 9.5x, or compress to 0.7x — all from the same document, same query.
+
+### Window Size Sweep (Exp 5)
+
+```
+Window    Words returned
+     0              11    <- just the matched sentence
+     1              56
+     2             105    <- sweet spot for most RAG systems
+     3             124
+     5             192    <- risk of context dilution
+```
+
+### Exp 6: Same Index, Query-Dependent Context
+
+When the query changes from "hallucinations" to "vector databases", the sentence window retrieval automatically surfaces different sentences and expands a different context window — **zero re-indexing needed**.
+
+### Tradeoffs
+
+| Strategy               | Retrieval precision | Context richness | Cost                      |
+|------------------------|---------------------|------------------|---------------------------|
+| Small-to-Big           | High (small index)  | High (parent)    | 2x storage (parent+child) |
+| Sentence Window        | Very high (sentence)| Tunable via k    | 1x storage, expand at query|
+| Contextual Compression | Normal              | Targeted         | Extra LLM call per result |
+
+### When To Use
+
+| Need                                          | Strategy                  |
+|-----------------------------------------------|---------------------------|
+| Best retrieval precision + full context       | Small-to-Big              |
+| Exact sentence match + surrounding context    | Sentence Window           |
+| Reduce context window usage, focused answers  | Contextual Compression    |
+| All of the above in production                | Combine all three         |
+
+### Interview Insight
+
+> "Dynamic chunking decouples the indexing granularity from the generation context size.
+> This resolves the fundamental RAG tradeoff: small chunks give sharp embeddings for
+> retrieval, large chunks give coherent context for generation. Small-to-Big and Sentence
+> Window are ingestion-time decisions (no extra cost at query time). Contextual Compression
+> is a query-time decision (extra LLM call but most targeted context). In production,
+> these strategies are combined: structure-aware chunking gives sections, semantic chunking
+> splits those sections, small-to-big indexes the sentences, and compression trims the
+> returned context per query."
+
+### Think About This
+
+1. In Exp 4, Sentence Window returned 9.5x more words than it indexed. At what point does the expansion *hurt* the LLM? What is the risk when `window_size=5`?
+2. Small-to-Big requires 2x storage (both parents and children). When is this storage cost worth paying vs when would you use Sentence Window instead?
+3. Contextual Compression gives 0.7x (less than indexed). Could compression ever *remove* the answer from the context? How would you detect and fix this failure?
 
 ---
 
 ## Tradeoffs Summary
 
-| Chunk size | Context quality | Retrieval precision | Storage cost |
-|------------|----------------|---------------------|--------------|
-| Large      | High            | Low (too broad)     | Low          |
-| Small      | Low (fragmented)| High (too narrow)   | High         |
-| Optimal    | Balanced        | Balanced            | Medium       |
+### Chunk Size
+
+| Chunk size | Context quality  | Retrieval precision | Storage cost |
+|------------|------------------|---------------------|--------------|
+| Large      | High             | Low (too broad)     | Low          |
+| Small      | Low (fragmented) | High (too narrow)   | High         |
+| Optimal    | Balanced         | Balanced            | Medium       |
 
 > Rule of thumb: chunk size should match the *granularity of the facts* you expect queries to ask about.
+
+### Strategy Selection Guide
+
+| Document type                  | Best strategy                              |
+|--------------------------------|--------------------------------------------|
+| Plain text, no structure       | Recursive -> Semantic                      |
+| Markdown / HTML with headers   | Structure-Aware + Recursive fallback       |
+| Dense research papers          | Semantic + Small-to-Big                    |
+| Customer support / FAQ docs    | Structure-Aware + Sentence Window          |
+| Code files                     | Recursive with code-specific separators    |
+| Need highest retrieval quality | Semantic -> Small-to-Big -> Compression    |
+| Fast prototype / baseline      | Fixed -> Recursive                         |
+
+### Technique Progression
+
+```
+Fixed Chunking
+    |-- adds boundary awareness --> Sliding Window
+    |-- adds structural respect --> Recursive Chunking
+    |-- adds semantic awareness --> Semantic Chunking
+    |-- adds document structure --> Structure-Aware Chunking
+    |-- adds query-time expand  --> Dynamic Chunking
+                                    (combines all the above)
+```
+
+Each technique fixes the failure mode of the previous one.
+In production, you combine multiple techniques rather than pick just one.
 
 ---
 
