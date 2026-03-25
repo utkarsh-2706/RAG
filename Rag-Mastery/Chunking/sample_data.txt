@@ -1,0 +1,21 @@
+Artificial Intelligence and Machine Learning: A Comprehensive Overview
+
+Artificial intelligence (AI) refers to the simulation of human intelligence processes by computer systems. These processes include learning, reasoning, and self-correction. AI has become one of the most transformative technologies of the 21st century, reshaping industries from healthcare to finance, manufacturing to education.
+
+Machine learning (ML) is a subset of AI that gives systems the ability to automatically learn and improve from experience without being explicitly programmed. ML focuses on developing computer programs that can access data and use it to learn for themselves. The process begins with observations or data, such as examples, direct experience, or instruction, to look for patterns in data and make better decisions in the future.
+
+Deep learning is a subfield of machine learning that uses neural networks with many layers — hence "deep" — to model and understand complex patterns. These neural networks are inspired by the structure and function of the human brain. Deep learning has been particularly successful in areas like image recognition, natural language processing, and speech recognition.
+
+Natural Language Processing (NLP) is a branch of artificial intelligence that helps computers understand, interpret, and manipulate human language. NLP draws from many disciplines, including computer science and computational linguistics, in its pursuit to fill the gap between human communication and computer understanding. Applications include machine translation, sentiment analysis, chatbots, and text summarization.
+
+Retrieval-Augmented Generation (RAG) is an AI framework that enhances large language models by combining them with external knowledge retrieval. Instead of relying solely on knowledge encoded during training, RAG systems first retrieve relevant documents from a knowledge base, then use those documents as context when generating a response. This approach reduces hallucinations and allows models to access up-to-date information.
+
+Vector databases are specialized storage systems designed to store, index, and query high-dimensional vector embeddings efficiently. When text is converted into embeddings — numerical representations capturing semantic meaning — vector databases allow for similarity search: finding chunks of text that are semantically similar to a query. Popular vector databases include Pinecone, Weaviate, Chroma, and FAISS.
+
+Chunking is the process of splitting large documents into smaller, manageable pieces before embedding and indexing them. The quality of chunking directly affects retrieval quality. If chunks are too large, retrieval becomes imprecise — the model gets too much irrelevant context. If chunks are too small, important context gets fragmented across multiple chunks and coherence is lost.
+
+Embeddings are dense vector representations of text that capture semantic meaning. Unlike sparse representations like TF-IDF, embeddings place semantically similar text close together in vector space. Models like OpenAI's text-embedding-ada-002, Sentence-BERT, and Cohere's embed models are commonly used to generate embeddings for RAG pipelines.
+
+Evaluation of RAG systems involves measuring both retrieval quality and generation quality. Retrieval metrics include precision, recall, and mean reciprocal rank (MRR). Generation metrics include faithfulness (does the answer match the retrieved context?), answer relevance (does the answer address the question?), and context relevance (was the retrieved context actually useful?). Frameworks like RAGAS provide automated evaluation pipelines for RAG systems.
+
+Prompt engineering is the discipline of crafting inputs to language models to elicit desired outputs. In RAG systems, the prompt typically includes a system instruction, the retrieved context chunks, and the user's question. The way context is structured and presented in the prompt significantly affects the quality of the generated answer. Techniques like chain-of-thought prompting, few-shot examples, and role assignment are commonly used to improve LLM outputs.
