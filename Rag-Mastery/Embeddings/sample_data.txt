@@ -1,0 +1,56 @@
+# Similar pairs (semantically close, different words)
+The patient suffered a heart attack last Tuesday.
+The man experienced a myocardial infarction on Tuesday.
+
+Machine learning models learn patterns from data automatically.
+AI systems improve their performance by training on examples.
+
+The stock market crashed dramatically this morning.
+Equity prices fell sharply during today's trading session.
+
+How do I reset my password?
+I forgot my login credentials and cannot access my account.
+
+The restaurant serves excellent Italian cuisine.
+This place has amazing pasta and wood-fired pizza.
+
+# Dissimilar pairs (completely different topics)
+Photosynthesis converts sunlight into glucose in plants.
+The Federal Reserve raised interest rates by 25 basis points.
+
+The soccer team won the championship after a penalty shootout.
+Quantum entanglement allows particles to be correlated across distances.
+
+She adopted a golden retriever puppy from the shelter.
+The database query took 45 seconds due to a missing index.
+
+# Tricky / subtle pairs (similar topic, different intent)
+How does RAG retrieve documents?
+What are the limitations of RAG systems?
+
+Python is a great programming language for beginners.
+Python is widely used in machine learning and data science.
+
+The model hallucinates when it lacks relevant context.
+Providing accurate context reduces hallucination in LLMs.
+
+# Domain-specific (technical terms)
+HNSW graphs enable approximate nearest neighbor search efficiently.
+Hierarchical Navigable Small World structures are used for ANN indexing.
+
+The transformer architecture uses self-attention mechanisms.
+BERT applies bidirectional attention to encode contextual representations.
+
+Fine-tuning adjusts pretrained weights on domain-specific data.
+Transfer learning adapts a base model to a new task with limited data.
+
+# Short vs long (same meaning, different length)
+RAG reduces hallucinations.
+Retrieval-Augmented Generation reduces hallucinations by grounding language model responses in retrieved documents from an external knowledge base, ensuring the model has access to factual context before generating an answer.
+
+# Negation traps (embeddings often fail here)
+The drug is effective for treating depression.
+The drug is not effective for treating depression.
+
+The system is secure against SQL injection attacks.
+The system is vulnerable to SQL injection attacks.

@@ -1,0 +1,65 @@
+# Sample RAG Corpus — Retrieval Practice
+# Each chunk is separated by ---
+# Chunks have varying relevance to different queries
+
+---
+CHUNK_ID: 1
+TOPIC: vector_databases
+TEXT: Vector databases store high-dimensional embeddings and enable fast approximate nearest neighbor search. They are the backbone of modern RAG systems. Popular options include Pinecone, Weaviate, Qdrant, and FAISS.
+---
+CHUNK_ID: 2
+TOPIC: embeddings
+TEXT: Embeddings are dense numerical representations of text. They capture semantic meaning, allowing similar concepts to have similar vectors. Models like OpenAI's text-embedding-ada-002 or sentence-transformers generate these embeddings.
+---
+CHUNK_ID: 3
+TOPIC: retrieval
+TEXT: Retrieval in RAG systems is fundamentally a ranking problem. Given a query, the system ranks all document chunks by relevance score and returns the top K. The quality of retrieval directly determines the quality of generated answers.
+---
+CHUNK_ID: 4
+TOPIC: retrieval
+TEXT: Top-K retrieval selects the K most similar chunks based on cosine similarity between the query embedding and document embeddings. The value of K controls the tradeoff between precision (fewer, more relevant chunks) and recall (more chunks, higher chance of finding the answer).
+---
+CHUNK_ID: 5
+TOPIC: chunking
+TEXT: Chunking is the process of splitting documents into smaller pieces before embedding. Chunk size affects retrieval quality — too small loses context, too large introduces noise. Common strategies include fixed-size, sentence-based, and semantic chunking.
+---
+CHUNK_ID: 6
+TOPIC: retrieval
+TEXT: A common failure mode in retrieval is returning duplicate or near-duplicate chunks. This happens when the same information appears multiple times in the corpus, causing Top-K to return redundant results and wasting context window space.
+---
+CHUNK_ID: 7
+TOPIC: llm_generation
+TEXT: Large language models generate answers by conditioning on retrieved context. The quality of the generation depends heavily on what was retrieved — irrelevant or noisy chunks confuse the model and lead to hallucinations or wrong answers.
+---
+CHUNK_ID: 8
+TOPIC: retrieval
+TEXT: Cosine similarity measures the angle between two vectors, not their magnitude. A score of 1.0 means identical direction (highly similar), 0.0 means orthogonal (unrelated), and -1.0 means opposite. Most semantic similarities fall between 0.6 and 0.95.
+---
+CHUNK_ID: 9
+TOPIC: hybrid_search
+TEXT: Hybrid search combines sparse retrieval (BM25, keyword-based) with dense retrieval (embeddings). BM25 is excellent for exact keyword matches, while dense retrieval handles semantic similarity. Together they cover each other's weaknesses.
+---
+CHUNK_ID: 10
+TOPIC: reranking
+TEXT: Reranking is a post-retrieval step where a more powerful cross-encoder model rescores the top-K retrieved chunks. It improves precision significantly but adds latency. Commonly used when retrieval alone is not accurate enough.
+---
+CHUNK_ID: 11
+TOPIC: retrieval
+TEXT: The precision-recall tradeoff in retrieval: a small K gives high precision (returned chunks are very relevant) but low recall (might miss the right chunk). A large K gives high recall but low precision (many irrelevant chunks enter the context).
+---
+CHUNK_ID: 12
+TOPIC: embeddings
+TEXT: Embedding models are trained using contrastive learning — similar sentences are pushed close together in vector space, dissimilar ones are pushed apart. The quality of the embedding model directly affects retrieval performance in RAG.
+---
+CHUNK_ID: 13
+TOPIC: vector_databases
+TEXT: FAISS (Facebook AI Similarity Search) is an open-source library for efficient similarity search. It supports both exact and approximate nearest neighbor search, making it suitable for both small datasets and billion-scale production systems.
+---
+CHUNK_ID: 14
+TOPIC: retrieval
+TEXT: Metadata filtering allows retrieval to be scoped to specific subsets of a corpus. For example, filtering by document date, author, category, or language before applying vector similarity. This dramatically improves precision in large, mixed corpora.
+---
+CHUNK_ID: 15
+TOPIC: irrelevant
+TEXT: The French Revolution began in 1789 and fundamentally transformed European political structures. The storming of the Bastille on July 14 became a symbol of resistance against tyranny and the power of popular uprising.
+---
